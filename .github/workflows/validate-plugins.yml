@@ -1,0 +1,29 @@
+name: Validate Community providers
+on:
+  pull_request:
+    paths: ['community/**', '.github/workflows/validate-plugins.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Compile and inspect packages without executing providers
+        shell: pwsh
+        run: |
+          foreach ($plugin in Get-ChildItem community/plugins -Directory) {
+            & ./community/build-plugin.ps1 -PluginDirectory $plugin.FullName
+            if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
+          }
+          foreach ($package in Get-ChildItem community/artifacts -Filter '*.zip') {
+            python ./community/validate-package.py $package.FullName
+            if ($LASTEXITCODE -ne 0) { throw 'Validation failed' }
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: community-packages
+          path: community/artifacts/*.zip

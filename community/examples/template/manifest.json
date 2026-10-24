@@ -1,0 +1,15 @@
+{
+  "SchemaVersion": 1,
+  "ApiVersion": 1,
+  "Id": "example-monitor-only",
+  "Version": "0.1.0",
+  "Name": "Provider template — monitoring only",
+  "Author": "Your name",
+  "EntryType": "Community.Template.Provider",
+  "Control": "MonitorOnly",
+  "Minimum": 1,
+  "Maximum": 100,
+  "Step": 1,
+  "Notes": "Template only. No hardware-control implementation or compatibility claim.",
+  "Profiles": [{"SchemaVersion":1,"Id":"example-model","DisplayName":"Example model","Manufacturer":"Example manufacturer","Model":"Example model","Board":"Example board","Bios":"Example BIOS","Provider":"example-monitor-only","ProviderVersion":1,"Notes":"Replace with collected identifiers; this alone does not implement control."}]
+}

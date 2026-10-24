@@ -1,0 +1,58 @@
+name: Publish reviewed Community provider
+on:
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: Directory name under community/plugins (reviewed main only)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: publish-plugin-catalog
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Build selected provider without publishing credentials
+        shell: pwsh
+        env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin }}
+        run: |
+          if ($env:PLUGIN_DIRECTORY -notmatch '^[a-z0-9][a-z0-9-]{2,63}$') { throw 'Invalid directory' }
+          & ./community/build-plugin.ps1 -PluginDirectory (Join-Path 'community/plugins' $env:PLUGIN_DIRECTORY)
+          if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
+          foreach ($package in Get-ChildItem community/artifacts -Filter '*.zip') {
+            python ./community/validate-package.py $package.FullName
+            if ($LASTEXITCODE -ne 0) { throw 'Validation failed' }
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: reviewed-package
+          path: community/artifacts/*.zip
+  publish:
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: reviewed-package
+          path: incoming
+      - name: Inspect bytes and publish (never execute provider)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $packages = @(Get-ChildItem incoming -Filter '*.zip')
+          if ($packages.Count -ne 1) { throw 'Expected one package' }
+          & ./community/publish-plugin.ps1 -PackagePath $packages[0].FullName

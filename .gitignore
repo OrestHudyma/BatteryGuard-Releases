@@ -1,0 +1,3 @@
+community/artifacts/
+__pycache__/
+*.pyc
