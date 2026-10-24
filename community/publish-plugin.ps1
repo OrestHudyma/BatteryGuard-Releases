@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$PackagePath,[string]$GhPath='gh',[string]$PythonPath='python')
+param([Parameter(Mandatory=$true)][string]$PackagePath,[string]$GhPath='gh',[string]$PythonPath='python',[string]$SourceRef='main')
 $ErrorActionPreference='Stop'
 $repo='OrestHudyma/BatteryGuard-Releases'
 $entryText=& $PythonPath (Join-Path $PSScriptRoot 'validate-package.py') $PackagePath
@@ -9,7 +9,7 @@ New-Item -ItemType Directory $scratch | Out-Null
 $releaseJson=& $GhPath release view plugins-api-v1 --repo $repo --json assets,isPrerelease 2>$null
 if($LASTEXITCODE -ne 0){
  'Community provider catalog for API 1. Packages require explicit execution approval and local testing. This is not an installer release; a successful build is not hardware verification.' | Set-Content (Join-Path $scratch 'notes.md')
- & $GhPath release create plugins-api-v1 --repo $repo --prerelease --title 'Community plugins · API 1' --notes-file (Join-Path $scratch 'notes.md')
+ & $GhPath release create plugins-api-v1 --repo $repo --prerelease --target $SourceRef --title 'Community plugins · API 1' --notes-file (Join-Path $scratch 'notes.md')
  if($LASTEXITCODE -ne 0){throw 'Catalog release creation failed'}
  $releaseJson=& $GhPath release view plugins-api-v1 --repo $repo --json assets,isPrerelease
 }
